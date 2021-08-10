@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <stdbool.h>
 
 #define CMD_SIZE 14
 #define TOPK "TopK\n"
@@ -18,20 +20,21 @@ typedef struct graphList_s
 graphList_t;
 
 /* The number of nodes in each graph */
-int d = 0;
-    
+int d;
+
 /* The number of graphs in the TopK list */
-int k = 0;
+int k;
 
 /* The list containing all the graphs */
-graphList_t *graphList;
+graphList_t graphList;
 
 /* Function declarations */
-void initGraphList(int);
+void initGraphList(size_t);
 void appendGraphList(uint);
-uint findShortestPath(uint [], int [])
+int findShortestPath(uint [], bool []);
 uint calculateWeight(uint [][d]);
 void addGraph();
+void checkIfTopK(uint);
 void topK();
 
 int main(int argc, char const *argv[])
@@ -76,7 +79,7 @@ int main(int argc, char const *argv[])
         if (strcmp(cmd, ADDGRAPH) == 0)
         {
             addGraph();
-        } 
+        }
         else if (strcmp(cmd, TOPK) == 0)
         {
             topK();
@@ -87,81 +90,87 @@ int main(int argc, char const *argv[])
 }
 
 /* Support for creating the graph list */
-void initGraphList(int defaultSize)
+void initGraphList(size_t defaultSize)
 {
-    graphList->graphWeight = malloc(defaultSize * sizeof(uint));
-    graphList->occupied = 0;
-    graphList->totSize = defaultSize;
+    graphList_t *tmp = &graphList;
+
+    tmp->graphWeight = malloc(defaultSize * sizeof(uint));
+    tmp->occupied = 0;
+    tmp->totSize = defaultSize;
 }
 
 /* Support for adding graphs to the list */
 void appendGraphList(uint newGraphWeight)
 {
-    if (graphList->occupied == graphList->totSize)
+    graphList_t *tmp = &graphList;
+
+    if (tmp->occupied == tmp->totSize)
     {
-        graphList->totSize = (graphList->totSize * 2);
-        graphList->graphWeight = realloc(graphList->graphWeight, graphList->totSize * sizeof(uint));
+        tmp->totSize = (tmp->totSize * 2);
+        tmp->graphWeight = realloc(tmp->graphWeight, tmp->totSize * sizeof(uint));
     }
 
-    graphList->graphWeight[graphList->occupied++] = newGraphWeight;
+    tmp->graphWeight[tmp->occupied++] = newGraphWeight;
 }
 
 /* Support for finding the shortest path to the current node */
-uint findShortestPath(uint path[], int sptSet[])
+int findShortestPath(uint shortestPath[], bool isShortest[])
 {
-    int min = UINT_MAX, min_index;
- 
-    for (int v = 0; v < d; v++)
+    int min, minId;
+    int i;
+
+    min = UINT_MAX;
+
+    for (i = 0; i < d; i++)
     {
-        if (sptSet[v] == 1 && path[v] <= min)
+        if (isShortest[i] == false && shortestPath[i] <= min)
         {
-            min = path[v];
-            min_index = v;
+            min = shortestPath[i];
+            minId = i;
         }
     }
-    
-    return min_index;
+
+    return minId;
 }
 
 /* Algorithm to calculate the sum of all the shortest paths from node 0 to all the other nodes in the graph, also known as the weight of the graph */
 uint calculateWeight(uint graph[d][d])
 {
+    int i;
     uint graphWeight = 0;
+    uint shortestPath[d];
+    bool isShortest[d];
 
-    uint path[d];
- 
-    int sptSet[d]; //0 true, 1 false
- 
-    for (int i = 0; i < d; i++)
+    for (i = 0; i < d; i++)
     {
-        path[i] = UINT_MAX;
-        sptSet[i] = 1;
+        shortestPath[i] = UINT_MAX;
+        isShortest[i] = false;
     }
- 
-    path[ROOT_NODE] = 0;
- 
-    for (int count = 0; count < d - 1; count++)
+
+    shortestPath[ROOT_NODE] = 0;
+
+    for (int ctr = 0; ctr < d - 1; ctr++)
     {
-        int u = findShortestPath(path, sptSet);
- 
-        sptSet[u] = 0;
- 
-        for (int v = 0; v < d; v++)
+        int curr = findShortestPath(shortestPath, isShortest);
+
+        isShortest[curr] = true;
+
+        for (int j = 0; j < d; j++)
         {
-            if (!sptSet[v] && graph[u][v] && path[u] != UINT_MAX && path[u] + graph[u][v] < path[v])
+            if (graph[curr][j] && !isShortest[j] && shortestPath[curr] != UINT_MAX && shortestPath[curr] + graph[curr][j] < shortestPath[j])
             {
-                path[v] = path[u] + graph[u][v];
-            } 
+                shortestPath[j] = shortestPath[curr] + graph[curr][j];
+            }
         }
     }
 
     /* Calculate the sum of all the shortest paths to find the graph weight */
-    for (int i = 0; i < d; i++)
+    for (i = 0; i < d; i++)
     {
-        graphWeight = graphWeight + path[i];
+        graphWeight = graphWeight + shortestPath[i];
     }
 
-    printf("%u", graphWeight);
+    printf("GRAPH WEIGHT: %u\n", graphWeight);
 
     return graphWeight;
 }
@@ -187,13 +196,21 @@ void addGraph()
     /* Calculate the weight of the current graph */
     graphWeight = calculateWeight(graph);
 
+    /* Check if the graph is smaller than the other graphs in the topK array */
+    checkIfTopK(graphWeight);
+
     /* Add the weight of the graph to the list containing all the graphs */
     appendGraphList(graphWeight);
-    
+
     return;
 }
 
-/* Calculate which graphs have the shortest paths and show the top k graphs in a list */ 
+/* Check if the graph is part of the ones with the smallest weight, if so, add it to topK array */
+void checkIfTopK(uint graphWeight) {
+
+}
+
+/* Calculate which graphs have the shortest paths and show the top k graphs in a list */
 void topK()
 {
     int i, j;
