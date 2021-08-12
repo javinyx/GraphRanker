@@ -66,7 +66,7 @@ int main(int argc, char const *argv[])
     char cmd[CMD_SIZE];
 
     /* Ask for d and k and convert them to integers */
-    fgets(init, sizeof(init), stdin);
+    if (fgets(init, sizeof(init), stdin) == NULL){}
     d = init[0] - '0';
     k = init[2] - '0';
 
@@ -77,13 +77,13 @@ int main(int argc, char const *argv[])
     fillTopK();
 
     /* Ask for the very first command */
-    fgets(cmd, sizeof(cmd), stdin);
+    if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
 
     /* If it's TopK ask the user to insert AggiungiGrafo as the first command*/
     while (strcmp(cmd, TOPK) == 0)
     {
         printf("Please use AggiungiGrafo as your first command.\n");
-        fgets(cmd, sizeof(cmd), stdin);
+        if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
     }
 
     /* If it's AggiungiGrafo, proceed */
@@ -94,7 +94,7 @@ int main(int argc, char const *argv[])
 
     /* Keep asking for input until user quits the program */
     while(stdin != NULL) {
-        fgets(cmd, sizeof(cmd), stdin);
+        if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
 
         if (strcmp(cmd, ADDGRAPH) == 0)
         {
@@ -153,7 +153,7 @@ int findShortestPath(uint shortestPath[], bool isShortest[])
     /* The shortest path */
     uint shortest;
     /* The index of the shortest path */
-    int shortestId;
+    int shortestId = 0;
     int i;
 
     /* Set the shortest initial path to be the maximum number */
@@ -231,7 +231,7 @@ void cmdAddGraph()
     {
         for (j = 0; j < d; j++)
         {
-            scanf("%u%*c", &graph[i][j]);
+            if (scanf("%u%*c", &graph[i][j]) != 0){}
         }
     }
 
@@ -272,7 +272,7 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
 
                 if (newGraphWeight > maxGraphWeight)
                 {
-                    maxGraphWeight == newGraphWeight;
+                    maxGraphWeight = newGraphWeight;
                 }
 
                 topKCounter++;
