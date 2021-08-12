@@ -54,6 +54,7 @@ bool isAlreadyTopK(uint);
 
 void replaceHighestGraph(uint, int);
 void findNewHighestGraph();
+uint getArchWeight();
 
 uint calculateWeight(uint[][d]);
 int findShortestPath(uint[], bool[]);
@@ -183,22 +184,25 @@ uint calculateWeight(uint graph[d][d])
     bool isShortest[d];
     int i;
 
+    /* Initiate all nodes as longest paths possible */
     for (i = 0; i < d; i++)
     {
         shortestPath[i] = UINT_MAX;
         isShortest[i] = false;
     }
 
+    /* Set the distance of node 0 to node 0 as 0 */
     shortestPath[ROOT_NODE] = 0;
 
     for (int ctr = 0; ctr < d - 1; ctr++)
     {
+        /* Find the shortest path for the current node */
         int curr = findShortestPath(shortestPath, isShortest);
-
         isShortest[curr] = true;
 
         for (int j = 0; j < d; j++)
         {
+            /* Update the shortest paths following requirements */
             if (graph[curr][j] && !isShortest[j] && shortestPath[curr] != UINT_MAX && shortestPath[curr] + graph[curr][j] < shortestPath[j])
             {
                 shortestPath[j] = shortestPath[curr] + graph[curr][j];
@@ -217,6 +221,33 @@ uint calculateWeight(uint graph[d][d])
     return graphWeight;
 }
 
+/* Support function for reading weights of arches */
+uint getArchWeight()
+{
+    /* The character being read */
+    int c = 0;
+    /* The weight to save */
+    uint weight = 0;
+
+    /* Read the first character from stdin */
+    c = getchar_unlocked();
+
+    /* When , is read, move on to the next number */
+    if (c == ',' || c == '\n')
+    {
+        c = getchar_unlocked();
+    }
+
+    /* When reading numbers, keep counting */
+    while (c >= '0' && c <= '9')
+    {
+        weight = (weight * 10) + (c - '0');
+        c = getchar_unlocked();
+    }
+
+    return weight;
+}
+
 /* Add a new graph to the list of graphs */
 void cmdAddGraph()
 {
@@ -231,7 +262,9 @@ void cmdAddGraph()
     {
         for (j = 0; j < d; j++)
         {
-            if (scanf("%u%*c", &graph[i][j]) != 0){}
+            //if (scanf("%u%*c", &graph[i][j]) != 0){}
+            graph[i][j] = getArchWeight();
+            printf("\n%u\n", graph[i][j]);
         }
     }
 
@@ -290,7 +323,7 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
     }
 }
 
-/* Support function for finding if the newGraphweight is already present in the topK list */
+/* Support function for finding if the newGraphWeight is already present in the topK list */
 bool isAlreadyTopK(uint newGraphWeight)
 {
     for (topKList_t* curr = topKHead; curr != NULL; curr = curr->next)
