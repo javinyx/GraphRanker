@@ -58,3 +58,4 @@ dkms.conf
 .vscode/
 cmake-build-debug/
 cmake-build-default/
+cmake-build-release/

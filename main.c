@@ -72,30 +72,29 @@ int main(int argc, char const *argv[])
     fillTopK();
 
     /* Ask for the very first command */
-    if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
+    //if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
 
     /* If it's TopK ask the user to insert AggiungiGrafo as the first command */
-    while (strcmp(cmd, TOPK) == 0)
+    /*while (strcmp(cmd, TOPK) == 0)
     {
         printf("Please use AggiungiGrafo as your first command.\n");
         if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
-    }
+    }*/
 
     /* If it's AggiungiGrafo, proceed */
-    if (strcmp(cmd, ADDGRAPH) == 0)
+    /*if (strcmp(cmd, ADDGRAPH) == 0)
     {
         cmdAddGraph();
-    }
+    }*/
 
     /* Keep asking for input until user quits the program */
-    while(stdin != NULL) {
-        if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
+    while(fgets(cmd, sizeof(cmd), stdin) != NULL) {
 
-        if (strcmp(cmd, ADDGRAPH) == 0)
+        if (cmd[0] == 'A')
         {
             cmdAddGraph();
         }
-        else if (strcmp(cmd, TOPK) == 0)
+        else if (cmd[0] == 'T')
         {
             cmdTopK();
         }
@@ -311,11 +310,11 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
 
         /* Else, if the topK list is full, replace the highest number present in topK with the new number, if the new number is smaller and already present */
         else if (newGraphWeight < (curr->graphWeight)) /* && !isAlreadyTopK(newGraphWeight) */
-        {
+            {
             replaceHighestGraph(newGraphWeight, newGraphIndex);
             findNewHighestGraph();
             break;
-        }
+            }
     }
 }
 
@@ -329,7 +328,6 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
             return true;
         }
     }
-
     return false;
 }*/
 
@@ -364,12 +362,17 @@ void findNewHighestGraph()
 /* Print the indexes of the graphs have the shortest paths from the topK list */
 void cmdTopK()
 {
-    for (topKList_t* curr = topKHead; curr != NULL; curr = curr->next)
+    topKList_t* curr = topKHead;
+    for (int i = 0; i < topKCounter - 1; curr = curr->next, i++)
     {
         if (curr->graphWeight != UINT_MAX)
         {
             printf("%d ", curr->graphIndex);
         }
     }
+    if (curr->graphIndex != -1)
+        printf("%d", curr->graphIndex);
+
+
     printf("\n");
 }
