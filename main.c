@@ -50,7 +50,7 @@ void cmdTopK();
 void appendTopK(uint, int);
 void checkIfTopK(uint, int);
 void fillTopK();
-bool isAlreadyTopK(uint);
+//bool isAlreadyTopK(uint);
 
 void replaceHighestGraph(uint, int);
 void findNewHighestGraph();
@@ -61,18 +61,12 @@ int findShortestPath(uint[], bool[]);
 
 int main(int argc, char const *argv[])
 {
-    /* Initial values as string to increase safety by using fgets */
-    char init[CMD_SIZE];
     /* The requested command, can be either AggiungiGrafo or TopK */
     char cmd[CMD_SIZE];
 
     /* Ask for d and k and convert them to integers */
-    if (fgets(init, sizeof(init), stdin) == NULL){}
-    d = init[0] - '0';
-    k = init[2] - '0';
-
-    /* Empty init as it won't be used anymore */
-    memset(init, 0, sizeof(init));
+    d = (int)getArchWeight();
+    k = (int)getArchWeight();
 
     /* Initiate the topK list */
     fillTopK();
@@ -80,7 +74,7 @@ int main(int argc, char const *argv[])
     /* Ask for the very first command */
     if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
 
-    /* If it's TopK ask the user to insert AggiungiGrafo as the first command*/
+    /* If it's TopK ask the user to insert AggiungiGrafo as the first command */
     while (strcmp(cmd, TOPK) == 0)
     {
         printf("Please use AggiungiGrafo as your first command.\n");
@@ -213,10 +207,13 @@ uint calculateWeight(uint graph[d][d])
     /* Calculate the sum of all the shortest paths to find the graph weight */
     for (i = 0; i < d; i++)
     {
-        graphWeight = graphWeight + shortestPath[i];
+        if (shortestPath[i] != UINT_MAX)
+        {
+            graphWeight = graphWeight + shortestPath[i];
+        }
     }
 
-    //printf("GRAPH WEIGHT: %u\n", graphWeight);
+    //printf("\nGRAPH WEIGHT: %u - ID: %d\n", graphWeight, gId);
 
     return graphWeight;
 }
@@ -233,7 +230,7 @@ uint getArchWeight()
     c = getchar_unlocked();
 
     /* When , is read, move on to the next number */
-    if (c == ',' || c == '\n')
+    if (c == ',' || c == '\n' || c == ' ')
     {
         c = getchar_unlocked();
     }
@@ -262,9 +259,8 @@ void cmdAddGraph()
     {
         for (j = 0; j < d; j++)
         {
-            //if (scanf("%u%*c", &graph[i][j]) != 0){}
             graph[i][j] = getArchWeight();
-            printf("\n%u\n", graph[i][j]);
+            //printf("\n%u\n", graph[i][j]);
         }
     }
 
@@ -314,7 +310,7 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
         }
 
         /* Else, if the topK list is full, replace the highest number present in topK with the new number, if the new number is smaller and already present */
-        else if (newGraphWeight < (curr->graphWeight) && !isAlreadyTopK(newGraphWeight))
+        else if (newGraphWeight < (curr->graphWeight)) /* && !isAlreadyTopK(newGraphWeight) */
         {
             replaceHighestGraph(newGraphWeight, newGraphIndex);
             findNewHighestGraph();
@@ -324,7 +320,7 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
 }
 
 /* Support function for finding if the newGraphWeight is already present in the topK list */
-bool isAlreadyTopK(uint newGraphWeight)
+/*bool isAlreadyTopK(uint newGraphWeight)
 {
     for (topKList_t* curr = topKHead; curr != NULL; curr = curr->next)
     {
@@ -335,7 +331,7 @@ bool isAlreadyTopK(uint newGraphWeight)
     }
 
     return false;
-}
+}*/
 
 /* Support function for replacing the highest graphWeight on the topKList with the newGraphWeight */
 void replaceHighestGraph(uint newGraphWeight, int newGraphIndex)
@@ -375,4 +371,5 @@ void cmdTopK()
             printf("%d ", curr->graphIndex);
         }
     }
+    printf("\n");
 }
