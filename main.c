@@ -241,7 +241,7 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
         topKCounter++;
     }
 
-    /* Else, if the topK list is full, replace the highest number present in topK with the new number, if the new number is smaller and already present */
+    /* Else, if the topK list is full, replace the highest weight present in topK with the new weight, if the new weight is smaller */
     else if (newGraphWeight < maxGraphWeight->graphWeight)
     {
         maxGraphWeight->graphWeight = newGraphWeight;
@@ -253,6 +253,7 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
     }
 }
 
+/* Support function to sort the array in ascending order */
 void quickSort(int first, int last)
 {
     int i, j, pivot;
