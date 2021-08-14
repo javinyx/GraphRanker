@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 #include <stdbool.h>
 
@@ -9,13 +10,15 @@
 #define ADDGRAPH 'A'
 #define ROOT_NODE 0
 
-/* The structure of the topK element */
+/* The structure of the topK list */
 typedef struct topKList_s
 {
     /* The weight of the current graph */
     uint graphWeight;
     /* The index of the current graph */
     int graphIndex;
+    /* The pointer to the next graph in the list */
+    struct topKList_s* next;
 }
 topKList_t;
 
@@ -28,9 +31,6 @@ int k;
 /* Global graph index for the next added graph */
 int gId = 0;
 
-/* The list containing all the topK graphs */
-topKList_t* topKList;
-
 /* Max graph weight in topK list */
 uint maxGraphWeight = 0;
 
@@ -40,10 +40,14 @@ bool isTopKFull = false;
 /* Counter keeping track of how many new graphs have been inserted in the topK list */
 int topKCounter = 0;
 
+/* The list containing all the graphs */
+topKList_t* topKHead = NULL;
+
 /* Function declarations */
 void cmdAddGraph();
 void cmdTopK();
 
+void appendTopK(uint, int);
 void checkIfTopK(uint, int);
 void fillTopK();
 
@@ -63,10 +67,7 @@ int main(int argc, char const *argv[])
     d = (int)getArchWeight();
     k = (int)getArchWeight();
 
-    /* The list containing all the topK graphs */
-    topKList = malloc(k * sizeof(topKList_t));
-
-    /* Fill the array with default values */
+    /* Initiate the topK list */
     fillTopK();
 
     /* Keep asking for input until user quits the program */
@@ -88,11 +89,39 @@ int main(int argc, char const *argv[])
 /* Support function for filling in the topK list */
 void fillTopK()
 {
-    for (int i = 0; i < k; i++)
+    for(int i = 0; i < k; i++)
     {
-        topKList[i].graphWeight = UINT_MAX;
-        topKList[i].graphIndex = -1;
+        appendTopK(UINT_MAX, -1);
     }
+}
+
+/* Support function for appending new graphs to topK */
+void appendTopK(uint newGraphWeight, int newGraphIndex)
+{
+    /* Allocate memory for the new graph and use a pointer to move from the head */
+    topKList_t* newGraph = (topKList_t*)malloc(sizeof(topKList_t));
+    topKList_t* curr = topKHead;
+
+    /* Create the new graph */
+    newGraph->graphWeight = newGraphWeight;
+    newGraph->graphIndex = newGraphIndex;
+    newGraph->next = NULL;
+
+    /* If the graph list is empty make the new graph the head */
+    if (topKHead == NULL)
+    {
+        topKHead = newGraph;
+        return;
+    }
+
+    /* Cycle through the list up to the last element */
+    while (curr->next != NULL)
+    {
+        curr = curr->next;
+    }
+
+    /* Set the last element's next value as the new graph */
+    curr->next = newGraph;
 }
 
 /* Support for finding the index of the shortest path to the current node */
@@ -233,15 +262,15 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
         isTopKFull = true;
     }
 
-    for (int i = 0; i < k; i++)
+    for (topKList_t* curr = topKHead; curr != NULL; curr = curr->next)
     {
         /* If the topK list isn't full, then replace one of the default values to the new graph weight */
         if (!isTopKFull)
         {
-            if (topKList[i].graphWeight == UINT_MAX)
+            if ((curr->graphWeight) == UINT_MAX)
             {
-                topKList[i].graphWeight = newGraphWeight;
-                topKList[i].graphIndex = newGraphIndex;
+                curr->graphWeight = newGraphWeight;
+                curr->graphIndex = newGraphIndex;
 
                 if (newGraphWeight > maxGraphWeight)
                 {
@@ -254,25 +283,24 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
         }
 
         /* Else, if the topK list is full, replace the highest number present in topK with the new number, if the new number is smaller and already present */
-        else if (isTopKFull && (newGraphWeight < maxGraphWeight))
-            {
-                replaceHighestGraph(newGraphWeight, newGraphIndex);
-                findNewHighestGraph();
-                break;
-            }
+        else if (newGraphWeight < maxGraphWeight)
+        {
+            replaceHighestGraph(newGraphWeight, newGraphIndex);
+            findNewHighestGraph();
+            break;
+        }
     }
 }
 
 /* Support function for replacing the highest graphWeight on the topKList with the newGraphWeight */
 void replaceHighestGraph(uint newGraphWeight, int newGraphIndex)
 {
-    for (int i = 0; i < k; i++)
+    for (topKList_t* curr = topKHead; curr != NULL; curr = curr->next)
     {
-        if (topKList[i].graphWeight == maxGraphWeight)
+        if (curr->graphWeight == maxGraphWeight)
         {
-            topKList[i].graphWeight = newGraphWeight;
-            topKList[i].graphIndex = newGraphIndex;
-            break;
+            curr->graphWeight = newGraphWeight;
+            curr->graphIndex = newGraphIndex;
         }
     }
 }
@@ -282,11 +310,11 @@ void findNewHighestGraph()
 {
     maxGraphWeight = 0;
 
-    for (int i = 0; i < k; i++)
+    for (topKList_t* curr = topKHead; curr != NULL; curr = curr->next)
     {
-        if (topKList[i].graphWeight > maxGraphWeight)
+        if (curr->graphWeight > maxGraphWeight)
         {
-            maxGraphWeight = topKList[i].graphWeight;
+            maxGraphWeight = curr->graphWeight;
         }
     }
 
@@ -295,19 +323,16 @@ void findNewHighestGraph()
 /* Print the indexes of the graphs have the shortest paths from the topK list */
 void cmdTopK()
 {
-    int i;
-
-    for (i = 0; i < topKCounter - 1; i++)
+    topKList_t* curr = topKHead;
+    for (int i = 0; i < topKCounter - 1; curr = curr->next, i++)
     {
-        if (topKList[i].graphIndex != UINT_MAX)
+        if (curr->graphWeight != UINT_MAX)
         {
-            printf("%d ", topKList[i].graphIndex);
+            printf("%d ", curr->graphIndex);
         }
     }
-    if (topKList[i].graphIndex != UINT_MAX)
-    {
-        printf("%d", topKList[i].graphIndex);
-    }
+    if (curr->graphIndex != -1)
+        printf("%d", curr->graphIndex);
 
     printf("\n");
 }
