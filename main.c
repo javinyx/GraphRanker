@@ -32,10 +32,7 @@ int gId = 0;
 topKList_t* topKList;
 
 /* Max graph weight in topK list */
-uint maxGraphWeight = 0;
-
-/* Boolean indicating whether the topK list is full or not */
-bool isTopKFull = false;
+topKList_t* maxGraphWeight;
 
 /* Counter keeping track of how many new graphs have been inserted in the topK list */
 int topKCounter = 0;
@@ -46,11 +43,9 @@ void cmdTopK();
 
 void checkIfTopK(uint, int);
 void fillTopK();
+void quickSort(int, int);
 
-void replaceHighestGraph(uint, int);
-void findNewHighestGraph();
 uint getArchWeight();
-
 uint calculateWeight(uint[][d]);
 int findShortestPath(uint[], bool[]);
 
@@ -65,6 +60,11 @@ int main(int argc, char const *argv[])
 
     /* The list containing all the topK graphs */
     topKList = malloc(k * sizeof(topKList_t));
+
+    /* Initiate maxWeight */
+    maxGraphWeight = malloc(sizeof(topKList_t));
+    maxGraphWeight->graphWeight = 0;
+    maxGraphWeight->graphIndex = -1;
 
     /* Fill the array with default values */
     fillTopK();
@@ -227,69 +227,78 @@ void cmdAddGraph()
 /* Check if the graph is part of the ones with the smallest weight, if so, add it to topK list */
 void checkIfTopK(uint newGraphWeight, int newGraphIndex)
 {
-    /* Set the topK list as full if the elements have been filled */
-    if (topKCounter == k)
+    /* If the topK list isn't full, then replace one of the default values to the new graph weight */
+    if (topKCounter < k)
     {
-        isTopKFull = true;
-    }
+        topKList[topKCounter].graphWeight = newGraphWeight;
+        topKList[topKCounter].graphIndex = newGraphIndex;
 
-    for (int i = 0; i < k; i++)
-    {
-        /* If the topK list isn't full, then replace one of the default values to the new graph weight */
-        if (!isTopKFull)
+        if (newGraphWeight > maxGraphWeight->graphWeight)
         {
-            if (topKList[i].graphWeight == UINT_MAX)
-            {
-                topKList[i].graphWeight = newGraphWeight;
-                topKList[i].graphIndex = newGraphIndex;
-
-                if (newGraphWeight > maxGraphWeight)
-                {
-                    maxGraphWeight = newGraphWeight;
-                }
-
-                topKCounter++;
-                break;
-            }
+            maxGraphWeight = &topKList[topKCounter];
         }
 
-        /* Else, if the topK list is full, replace the highest number present in topK with the new number, if the new number is smaller and already present */
-        else if (isTopKFull && (newGraphWeight < maxGraphWeight))
-            {
-                replaceHighestGraph(newGraphWeight, newGraphIndex);
-                findNewHighestGraph();
-                break;
-            }
+        topKCounter++;
+    }
+
+    /* Else, if the topK list is full, replace the highest number present in topK with the new number, if the new number is smaller and already present */
+    else if (newGraphWeight < maxGraphWeight->graphWeight)
+    {
+        maxGraphWeight->graphWeight = newGraphWeight;
+        maxGraphWeight->graphIndex = newGraphIndex;
+
+        quickSort(0, k - 1);
+
+        maxGraphWeight = &topKList[k - 1];
     }
 }
 
-/* Support function for replacing the highest graphWeight on the topKList with the newGraphWeight */
-void replaceHighestGraph(uint newGraphWeight, int newGraphIndex)
+void quickSort(int first, int last)
 {
-    for (int i = 0; i < k; i++)
+    int i, j, pivot;
+    topKList_t tmp;
+
+    if (first < last)
     {
-        if (topKList[i].graphWeight == maxGraphWeight)
+        pivot = first;
+        i = first;
+        j = last;
+
+        while (i < j)
         {
-            topKList[i].graphWeight = newGraphWeight;
-            topKList[i].graphIndex = newGraphIndex;
-            break;
+            while (topKList[i].graphWeight <= topKList[pivot].graphWeight && i < last)
+            {
+                i++;
+            }
+            while (topKList[j].graphWeight > topKList[pivot].graphWeight)
+            {
+                j--;
+            }
+            if (i < j)
+            {
+                tmp.graphWeight = topKList[i].graphWeight;
+                tmp.graphIndex = topKList[i].graphIndex;
+
+                topKList[i].graphWeight = topKList[j].graphWeight;
+                topKList[i].graphIndex = topKList[j].graphIndex;
+
+                topKList[j].graphWeight = tmp.graphWeight;
+                topKList[j].graphIndex = tmp.graphIndex;
+            }
         }
+
+        tmp.graphWeight = topKList[pivot].graphWeight;
+        tmp.graphIndex = topKList[pivot].graphIndex;
+
+        topKList[pivot].graphWeight = topKList[j].graphWeight;
+        topKList[pivot].graphIndex = topKList[j].graphIndex;
+
+        topKList[j].graphWeight = tmp.graphWeight;
+        topKList[j].graphIndex = tmp.graphIndex;
+
+        quickSort(first, j - 1);
+        quickSort(j + 1, last);
     }
-}
-
-/* Support function for finding the new highest graphWeight in the topK list */
-void findNewHighestGraph()
-{
-    maxGraphWeight = 0;
-
-    for (int i = 0; i < k; i++)
-    {
-        if (topKList[i].graphWeight > maxGraphWeight)
-        {
-            maxGraphWeight = topKList[i].graphWeight;
-        }
-    }
-
 }
 
 /* Print the indexes of the graphs have the shortest paths from the topK list */
