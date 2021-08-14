@@ -6,8 +6,8 @@
 #include <stdbool.h>
 
 #define CMD_SIZE 14
-#define TOPK "TopK\n"
-#define ADDGRAPH "AggiungiGrafo"
+#define TOPK 'T'
+#define ADDGRAPH 'A'
 #define ROOT_NODE 0
 
 /* The structure of the topK list */
@@ -50,7 +50,6 @@ void cmdTopK();
 void appendTopK(uint, int);
 void checkIfTopK(uint, int);
 void fillTopK();
-//bool isAlreadyTopK(uint);
 
 void replaceHighestGraph(uint, int);
 void findNewHighestGraph();
@@ -71,30 +70,14 @@ int main(int argc, char const *argv[])
     /* Initiate the topK list */
     fillTopK();
 
-    /* Ask for the very first command */
-    //if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
-
-    /* If it's TopK ask the user to insert AggiungiGrafo as the first command */
-    /*while (strcmp(cmd, TOPK) == 0)
-    {
-        printf("Please use AggiungiGrafo as your first command.\n");
-        if (fgets(cmd, sizeof(cmd), stdin) == NULL){}
-    }*/
-
-    /* If it's AggiungiGrafo, proceed */
-    /*if (strcmp(cmd, ADDGRAPH) == 0)
-    {
-        cmdAddGraph();
-    }*/
-
     /* Keep asking for input until user quits the program */
     while(fgets(cmd, sizeof(cmd), stdin) != NULL) {
 
-        if (cmd[0] == 'A')
+        if (cmd[0] == ADDGRAPH)
         {
             cmdAddGraph();
         }
-        else if (cmd[0] == 'T')
+        else if (cmd[0] == TOPK)
         {
             cmdTopK();
         }
@@ -212,8 +195,6 @@ uint calculateWeight(uint graph[d][d])
         }
     }
 
-    //printf("\nGRAPH WEIGHT: %u - ID: %d\n", graphWeight, gId);
-
     return graphWeight;
 }
 
@@ -259,7 +240,6 @@ void cmdAddGraph()
         for (j = 0; j < d; j++)
         {
             graph[i][j] = getArchWeight();
-            //printf("\n%u\n", graph[i][j]);
         }
     }
 
@@ -271,12 +251,6 @@ void cmdAddGraph()
 
     /* Update the global index */
     gId++;
-
-    //TEMP PRINT TOPK
-    /*for (topKList_t* curr = topKHead; curr != NULL; curr = curr->next)
-    {
-        printf("INDEX: %d - WEIGHT: %u\n", curr->graphIndex, curr->graphWeight);
-    }*/
 }
 
 /* Check if the graph is part of the ones with the smallest weight, if so, add it to topK list */
@@ -309,27 +283,14 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
         }
 
         /* Else, if the topK list is full, replace the highest number present in topK with the new number, if the new number is smaller and already present */
-        else if (newGraphWeight < (curr->graphWeight)) /* && !isAlreadyTopK(newGraphWeight) */
+        else if (newGraphWeight < maxGraphWeight)
             {
-            replaceHighestGraph(newGraphWeight, newGraphIndex);
-            findNewHighestGraph();
-            break;
+                replaceHighestGraph(newGraphWeight, newGraphIndex);
+                findNewHighestGraph();
+                break;
             }
     }
 }
-
-/* Support function for finding if the newGraphWeight is already present in the topK list */
-/*bool isAlreadyTopK(uint newGraphWeight)
-{
-    for (topKList_t* curr = topKHead; curr != NULL; curr = curr->next)
-    {
-        if (newGraphWeight == curr->graphWeight)
-        {
-            return true;
-        }
-    }
-    return false;
-}*/
 
 /* Support function for replacing the highest graphWeight on the topKList with the newGraphWeight */
 void replaceHighestGraph(uint newGraphWeight, int newGraphIndex)
@@ -372,7 +333,6 @@ void cmdTopK()
     }
     if (curr->graphIndex != -1)
         printf("%d", curr->graphIndex);
-
 
     printf("\n");
 }
