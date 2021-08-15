@@ -33,6 +33,8 @@ topKList_t* topKList;
 
 /* Max graph weight in topK list */
 topKList_t* maxGraphWeight;
+topKList_t* tmpMaxGraphWeight;
+int supp;
 
 /* Counter keeping track of how many new graphs have been inserted in the topK list */
 int topKCounter = 0;
@@ -42,7 +44,6 @@ void cmdAddGraph();
 void cmdTopK();
 
 void checkIfTopK(uint, int);
-void fillTopK();
 void quickSort(int, int);
 
 uint getArchWeight();
@@ -63,11 +64,14 @@ int main(int argc, char const *argv[])
 
     /* Initiate maxWeight */
     maxGraphWeight = malloc(sizeof(topKList_t));
-    maxGraphWeight->graphWeight = 0;
+    maxGraphWeight->graphWeight = -1;
     maxGraphWeight->graphIndex = -1;
 
-    /* Fill the array with default values */
-    fillTopK();
+    tmpMaxGraphWeight = malloc(sizeof(topKList_t));
+    tmpMaxGraphWeight->graphWeight = -1;
+    tmpMaxGraphWeight->graphIndex = -1;
+
+    supp = k - 2;
 
     /* Keep asking for input until user quits the program */
     while(fgets(cmd, sizeof(cmd), stdin) != NULL) {
@@ -83,16 +87,6 @@ int main(int argc, char const *argv[])
     }
 
     return 0;
-}
-
-/* Support function for filling in the topK list */
-void fillTopK()
-{
-    for (int i = 0; i < k; i++)
-    {
-        topKList[i].graphWeight = UINT_MAX;
-        topKList[i].graphIndex = -1;
-    }
 }
 
 /* Support for finding the index of the shortest path to the current node */
@@ -239,17 +233,54 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
         }
 
         topKCounter++;
+
+        if (topKCounter == k)
+        {
+            quickSort(0, k - 1);
+            maxGraphWeight = &topKList[k - 1];
+        }
     }
 
     /* Else, if the topK list is full, replace the highest weight present in topK with the new weight, if the new weight is smaller */
-    else if (newGraphWeight < maxGraphWeight->graphWeight)
+    else if ((newGraphWeight < maxGraphWeight->graphWeight) || (newGraphWeight < tmpMaxGraphWeight->graphWeight))
     {
-        maxGraphWeight->graphWeight = newGraphWeight;
-        maxGraphWeight->graphIndex = newGraphIndex;
+        if (maxGraphWeight->graphWeight > tmpMaxGraphWeight->graphWeight)
+        {
+            maxGraphWeight->graphWeight = newGraphWeight;
+            maxGraphWeight->graphIndex = newGraphIndex;
 
-        quickSort(0, k - 1);
+            /* If the new weight is bigger than the temp weight, set it as the temporary max */
+            if (newGraphWeight > tmpMaxGraphWeight->graphWeight)
+            {
+                tmpMaxGraphWeight = maxGraphWeight;
+            }
 
-        maxGraphWeight = &topKList[k - 1];
+            /* If the new weight is smaller than the supp, set the new max as the supp */
+            if (newGraphWeight < topKList[supp].graphWeight)
+            {
+                maxGraphWeight = &topKList[supp];
+            }
+
+            supp--;
+
+            if (supp == 0)
+            {
+                supp = k - 2;
+                tmpMaxGraphWeight = &topKList[supp];
+            }
+        }
+
+        else
+        {
+            tmpMaxGraphWeight->graphWeight = newGraphWeight;
+            tmpMaxGraphWeight->graphIndex = newGraphIndex;
+
+            quickSort(0, k - 1);
+            maxGraphWeight = &topKList[k - 1];
+            tmpMaxGraphWeight = &topKList[0];
+
+            supp = k - 2;
+        }
     }
 }
 
@@ -307,16 +338,16 @@ void cmdTopK()
 {
     int i;
 
-    for (i = 0; i < topKCounter - 1; i++)
+    for (i = 0; i < topKCounter; i++)
     {
-        if (topKList[i].graphIndex != UINT_MAX)
+        if (i == topKCounter - 1)
+        {
+            printf("%d", topKList[i].graphIndex);
+        }
+        else
         {
             printf("%d ", topKList[i].graphIndex);
         }
-    }
-    if (topKList[i].graphIndex != UINT_MAX)
-    {
-        printf("%d", topKList[i].graphIndex);
     }
 
     printf("\n");
