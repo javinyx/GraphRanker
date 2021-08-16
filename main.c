@@ -34,9 +34,13 @@ topKList_t* topKList;
 /* Max graph weight in topK list */
 topKList_t* maxGraphWeight;
 
+/* Temporary max weight in topK list */
 topKList_t* tmpMaxGraphWeight;
+
+/* Initial position of tmpMaxGraphWeight */
 topKList_t* resetTmpMaxWeight;
 
+/* Support index to keep track of second-highest weight in topK list */
 int tracker;
 
 /* Counter keeping track of how many new graphs have been inserted in the topK list */
@@ -71,22 +75,26 @@ int main(int argc, char const *argv[])
     maxGraphWeight->graphWeight = 0;
     maxGraphWeight->graphIndex = -1;
 
-    /* Initiate maxWeight */
+    /* Initiate tmpMaxWeight */
     tmpMaxGraphWeight = malloc(sizeof(topKList_t));
     tmpMaxGraphWeight->graphWeight = 0;
     tmpMaxGraphWeight->graphIndex = -1;
 
+    /* Save the initial values of tmpMaxWeight */
     resetTmpMaxWeight = tmpMaxGraphWeight;
 
+    /* Tracker saving the spot of the (k - n) highest weight */
     tracker = k - 2;
 
     /* Keep asking for input until user quits the program */
-    while(fgets(cmd, sizeof(cmd), stdin) != NULL) {
-
+    while(fgets(cmd, sizeof(cmd), stdin) != NULL)
+    {
+        /* AggiungiGrafo */
         if (cmd[0] == ADDGRAPH)
         {
             cmdAddGraph();
         }
+        /* TopK */
         else if (cmd[0] == TOPK)
         {
             cmdTopK();
@@ -126,10 +134,13 @@ uint calculateWeight(uint graph[d][d])
 {
     /* Initial graphWeight set to 0 */
     uint graphWeight = 0;
+
     /* shortestPath array containing the shortest paths to each node */
     uint shortestPath[d];
+
     /* isShortest array containing booleans which indicate if the path is the shortest to that node */
     bool isShortest[d];
+
     int i;
 
     /* Initiate all nodes as longest paths possible */
@@ -146,6 +157,7 @@ uint calculateWeight(uint graph[d][d])
     {
         /* Find the shortest path for the current node */
         int curr = findShortestPath(shortestPath, isShortest);
+
         isShortest[curr] = true;
 
         for (int j = 0; j < d; j++)
@@ -167,9 +179,6 @@ uint calculateWeight(uint graph[d][d])
         }
     }
 
-    //cmdTopK();
-    //printf("Graph Weight: %u  -  ID: %d\n", graphWeight, gId);
-
     return graphWeight;
 }
 
@@ -178,6 +187,7 @@ uint getArchWeight()
 {
     /* The character being read */
     int c = 0;
+
     /* The weight to save */
     uint weight = 0;
 
@@ -205,8 +215,10 @@ void cmdAddGraph()
 {
     /* The weight of the added graph */
     uint graphWeight;
+
     /* Create a matrix of unsigned integers for each graph since the max value is 2^32 - 1 */
     uint graph[d][d];
+
     int i, j;
 
     /* Read each value of the graph from the command line ignoring commas */
@@ -231,7 +243,7 @@ void cmdAddGraph()
 /* Check if the graph is part of the ones with the smallest weight, if so, add it to topK list */
 void checkIfTopK(uint newGraphWeight, int newGraphIndex)
 {
-    /* If the topK list isn't full, then replace one of the default values to the new graph weight */
+    /* If the topK list isn't full, then add the new graph weight */
     if (topKCounter < k)
     {
         topKList[topKCounter].graphWeight = newGraphWeight;
@@ -251,37 +263,47 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
         }
     }
 
-    /* Else, if the topK list is full, replace the highest weight present in topK with the new weight, if the new weight is smaller */
+    /* Else, replace the highest weight present in topK with the new weight, if the new weight is smaller than either max*/
     else if ((newGraphWeight < maxGraphWeight->graphWeight) || (newGraphWeight < tmpMaxGraphWeight->graphWeight))
     {
         if (maxGraphWeight->graphWeight > tmpMaxGraphWeight->graphWeight)
         {
+            /* Replace the max weight with the new weight */
             maxGraphWeight->graphWeight = newGraphWeight;
             maxGraphWeight->graphIndex = newGraphIndex;
 
             /* If the new weight is bigger than the temp weight, set it as the temporary max */
-            if (newGraphWeight > tmpMaxGraphWeight->graphWeight)
+            if (newGraphWeight >= tmpMaxGraphWeight->graphWeight)
             {
                 tmpMaxGraphWeight = maxGraphWeight;
             }
 
-            maxGraphWeight = &topKList[tracker];
+            /* If the new weight is smaller than the tracker (k - n), set the new max as the tracker */
+            if (newGraphWeight < topKList[tracker].graphWeight)
+            {
+                maxGraphWeight = &topKList[tracker];
+            }
+
+            /* If the start of the list is reached, reset tmpMaxWeight and tracker */
+            if (tracker < 0)
+            {
+                maxGraphWeight = &topKList[k - 1];
+                tmpMaxGraphWeight = resetTmpMaxWeight;
+                tracker = k - 1;
+            }
 
             tracker--;
-
-            if (tracker == 0)
-            {
-                tracker = k - 2;
-                tmpMaxGraphWeight = resetTmpMaxWeight;
-            }
         }
 
         else
         {
+            /* Replace the temp max with the new graph */
             tmpMaxGraphWeight->graphWeight = newGraphWeight;
             tmpMaxGraphWeight->graphIndex = newGraphIndex;
 
+            /* Sort the topKList and reset pointers and tracker */
             mergeSort(topKList, 0, k - 1);
+
             maxGraphWeight = &topKList[k - 1];
             tmpMaxGraphWeight = resetTmpMaxWeight;
             tracker = k - 2;
@@ -289,78 +311,82 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
     }
 }
 
-// Merge two subarrays L and M into arr
-void mergeSupport(topKList_t *arr, int p, int q, int r)
+/* Support function to merge more arrays into one */
+void mergeSupport(topKList_t *list, int start, int middle, int end)
 {
+    /* Calculate the sizes of the new arrays */
+    int n1 = middle - start + 1;
+    int n2 = end - middle;
 
-    // Create L ← A[p..q] and M ← A[q+1..r]
-    int n1 = q - p + 1;
-    int n2 = r - q;
+    /* Initiate the support arrays */
+    topKList_t *tmp1, *tmp2;
+    tmp1 = malloc(n1 * sizeof(topKList_t));
+    tmp2 = malloc(n2 * sizeof(topKList_t));
 
-    topKList_t *L, *M;
-    L = malloc(n1 * sizeof(topKList_t));
-    M = malloc(n2 * sizeof(topKList_t));
-
+    /* Copy the contents of the list */
     for (int i = 0; i < n1; i++)
     {
-        L[i].graphWeight = arr[p + i].graphWeight;
-        L[i].graphIndex = arr[p + i].graphIndex;
+        tmp1[i].graphWeight = list[start + i].graphWeight;
+        tmp1[i].graphIndex = list[start + i].graphIndex;
     }
 
     for (int j = 0; j < n2; j++)
     {
-        M[j].graphWeight = arr[q + 1 + j].graphWeight;
-        M[j].graphIndex = arr[q + 1 + j].graphIndex;
+        tmp2[j].graphWeight = list[middle + 1 + j].graphWeight;
+        tmp2[j].graphIndex = list[middle + 1 + j].graphIndex;
     }
 
+    /* Save indexes of support arrays */
+    int i = 0;
+    int j = 0;
+    int l = start;
 
-    // Maintain current index of sub-arrays and main array
-    int i, j, l;
-    i = 0;
-    j = 0;
-    l = p;
-
-    // Until we reach either end of either L or M, pick larger among
-    // elements L and M and place them in the correct position at A[p..r]
-    while (i < n1 && j < n2) {
-        if (L[i].graphWeight <= M[j].graphWeight) {
-            arr[l] = L[i];
+    /* Put elements of the support arrays into the main array, in order */
+    while (i < n1 && j < n2)
+    {
+        if (tmp1[i].graphWeight <= tmp2[j].graphWeight)
+        {
+            list[l] = tmp1[i];
             i++;
-        } else {
-            arr[l] = M[j];
+        }
+        else
+        {
+            list[l] = tmp2[j];
             j++;
         }
         l++;
     }
 
-    // When we run out of elements in either L or M,
-    // pick up the remaining elements and put in A[p..r]
-    while (i < n1) {
-        arr[l] = L[i];
+    /* Copy the remaining elements of the support arrays into the main array */
+    while (i < n1)
+    {
+        list[l] = tmp1[i];
         i++;
         l++;
     }
 
-    while (j < n2) {
-        arr[l] = M[j];
+    while (j < n2)
+    {
+        list[l] = tmp2[j];
         j++;
         l++;
     }
 }
 
-// Divide the array into two subarrays, sort them and merge them
-void mergeSort(topKList_t *arr, int l, int r)
+/* Algorithm to order the list in ascending order */
+void mergeSort(topKList_t *list, int start, int end)
 {
-    if (l < r) {
+    if (start < end)
+    {
+        /* Find the center of the list */
+        int middle = start + (end - start) / 2;
 
-        // m is the point where the array is divided into two subarrays
-        int m = l + (r - l) / 2;
+        /* Split the list in 2 and sort */
+        mergeSort(list, start, middle);
+        mergeSort(list, middle + 1, end);
 
-        mergeSort(arr, l, m);
-        mergeSort(arr, m + 1, r);
-
-        // Merge the sorted subarrays
-        mergeSupport(arr, l, m, r);
+        /* Merge the arrays */
+        mergeSupport(list, start, middle, end);
     }
 }
 
@@ -371,6 +397,7 @@ void cmdTopK()
 
     for (i = 0; i < topKCounter; i++)
     {
+        /* If it's the last character, remove the space */
         if (i == topKCounter - 1)
         {
             printf("%d", topKList[i].graphIndex);
