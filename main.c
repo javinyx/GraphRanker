@@ -33,9 +33,11 @@ topKList_t* topKList;
 
 /* Max graph weight in topK list */
 topKList_t* maxGraphWeight;
+
 topKList_t* tmpMaxGraphWeight;
-topKList_t* resetTmpMax;
-int supp;
+topKList_t* resetTmpMaxWeight;
+
+int tracker;
 
 /* Counter keeping track of how many new graphs have been inserted in the topK list */
 int topKCounter = 0;
@@ -45,8 +47,8 @@ void cmdAddGraph();
 void cmdTopK();
 
 void checkIfTopK(uint, int);
-void mergeSort(topKList_t* , int, int);
-void mergeSupport(topKList_t* , int, int, int);
+void mergeSort(topKList_t*, int, int);
+void mergeSupport(topKList_t*, int, int, int);
 
 uint getArchWeight();
 uint calculateWeight(uint[][d]);
@@ -64,21 +66,19 @@ int main(int argc, char const *argv[])
     /* The list containing all the topK graphs */
     topKList = malloc(k * sizeof(topKList_t));
 
-    /* Initialize maxWeight */
+    /* Initiate maxWeight */
     maxGraphWeight = malloc(sizeof(topKList_t));
-    maxGraphWeight->graphWeight = -1;
+    maxGraphWeight->graphWeight = 0;
     maxGraphWeight->graphIndex = -1;
 
-    /* Initialize tmpMaxWeight */
+    /* Initiate maxWeight */
     tmpMaxGraphWeight = malloc(sizeof(topKList_t));
-    tmpMaxGraphWeight->graphWeight = -1;
+    tmpMaxGraphWeight->graphWeight = 0;
     tmpMaxGraphWeight->graphIndex = -1;
 
-    /* Save the address of tmpMaxWeight */
-    resetTmpMax = tmpMaxGraphWeight;
+    resetTmpMaxWeight = tmpMaxGraphWeight;
 
-    /* Initialize supp */
-    supp = k - 2;
+    tracker = k - 2;
 
     /* Keep asking for input until user quits the program */
     while(fgets(cmd, sizeof(cmd), stdin) != NULL) {
@@ -167,6 +167,9 @@ uint calculateWeight(uint graph[d][d])
         }
     }
 
+    //cmdTopK();
+    //printf("Graph Weight: %u  -  ID: %d\n", graphWeight, gId);
+
     return graphWeight;
 }
 
@@ -248,12 +251,11 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
         }
     }
 
-    /* Else, if the new weight is smaller than either one of the max weights */
+    /* Else, if the topK list is full, replace the highest weight present in topK with the new weight, if the new weight is smaller */
     else if ((newGraphWeight < maxGraphWeight->graphWeight) || (newGraphWeight < tmpMaxGraphWeight->graphWeight))
     {
         if (maxGraphWeight->graphWeight > tmpMaxGraphWeight->graphWeight)
         {
-            /* Replace the current max graph with the new graph */
             maxGraphWeight->graphWeight = newGraphWeight;
             maxGraphWeight->graphIndex = newGraphIndex;
 
@@ -263,42 +265,33 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
                 tmpMaxGraphWeight = maxGraphWeight;
             }
 
-            /* If the new weight is smaller than the supp (k - n), set the new max as the supp */
-            if (newGraphWeight < topKList[supp].graphWeight)
-            {
-                maxGraphWeight = &topKList[supp];
-            }
+            maxGraphWeight = &topKList[tracker];
 
-            supp--;
+            tracker--;
 
-            /* If the end of the array is reached */
-            if (supp == 0)
+            if (tracker == 0)
             {
-                /* Reset the values */
-                maxGraphWeight = &topKList[k - 1];
-                tmpMaxGraphWeight = resetTmpMax;
-                supp = k - 2;
+                tracker = k - 2;
+                tmpMaxGraphWeight = resetTmpMaxWeight;
             }
         }
 
-        else if (tmpMaxGraphWeight->graphWeight > maxGraphWeight->graphWeight)
+        else
         {
-            /* Replace the recent max graph with the new graph */
             tmpMaxGraphWeight->graphWeight = newGraphWeight;
             tmpMaxGraphWeight->graphIndex = newGraphIndex;
 
-            /* Sort the list and reset the values */
             mergeSort(topKList, 0, k - 1);
-
             maxGraphWeight = &topKList[k - 1];
-            tmpMaxGraphWeight = resetTmpMax;
-            supp = k - 2;
+            tmpMaxGraphWeight = resetTmpMaxWeight;
+            tracker = k - 2;
         }
     }
 }
 
 // Merge two subarrays L and M into arr
-void mergeSupport(topKList_t arr[], int p, int q, int r) {
+void mergeSupport(topKList_t *arr, int p, int q, int r)
+{
 
     // Create L ← A[p..q] and M ← A[q+1..r]
     int n1 = q - p + 1;
@@ -356,7 +349,8 @@ void mergeSupport(topKList_t arr[], int p, int q, int r) {
 }
 
 // Divide the array into two subarrays, sort them and merge them
-void mergeSort(topKList_t arr[], int l, int r) {
+void mergeSort(topKList_t *arr, int l, int r)
+{
     if (l < r) {
 
         // m is the point where the array is divided into two subarrays
