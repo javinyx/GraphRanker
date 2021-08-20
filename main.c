@@ -10,14 +10,15 @@
 #define ROOT_NODE 0
 
 /* The structure of the topK element */
-typedef struct topKList_s
+typedef struct topKGraph_s
 {
     /* The weight of the current graph */
     uint graphWeight;
+
     /* The index of the current graph */
     int graphIndex;
 }
-topKList_t;
+topKGraph_t;
 
 /* The number of nodes in each graph */
 int d;
@@ -29,18 +30,18 @@ int k;
 int gId = 0;
 
 /* The list containing all the topK graphs */
-topKList_t* topKList;
+topKGraph_t* topKList;
 
 /* Max graph weight in topK list */
-topKList_t* maxGraphWeight;
+topKGraph_t* maxGraphWeight;
 
-/* Temporary max weight in topK list */
-topKList_t* tmpMaxGraphWeight;
+/* Temporary max weight for new insertions in topK list */
+topKGraph_t* tmpMaxGraphWeight;
 
-/* Initial position of tmpMaxGraphWeight */
-topKList_t* resetTmpMaxWeight;
+/* Initial position (and values) of tmpMaxGraphWeight */
+topKGraph_t* resetTmpMaxWeight;
 
-/* Support index to keep track of second-highest weight in topK list */
+/* Support index to keep track of second-highest previous weight in topK list */
 int tracker;
 
 /* Counter keeping track of how many new graphs have been inserted in the topK list */
@@ -51,12 +52,12 @@ void cmdAddGraph();
 void cmdTopK();
 
 void checkIfTopK(uint, int);
-void mergeSort(topKList_t*, int, int);
-void mergeSupport(topKList_t*, int, int, int);
+void mergeSort(int, int);
+void mergeArrays(int, int, int);
 
 uint getArchWeight();
 uint calculateWeight(uint[][d]);
-int findShortestPath(uint[], bool[]);
+int findShortestPath(const uint*, const bool*);
 
 int main(int argc, char const *argv[])
 {
@@ -68,15 +69,15 @@ int main(int argc, char const *argv[])
     k = (int)getArchWeight();
 
     /* The list containing all the topK graphs */
-    topKList = malloc(k * sizeof(topKList_t));
+    topKList = malloc(k * sizeof(topKGraph_t));
 
     /* Initiate maxWeight */
-    maxGraphWeight = malloc(sizeof(topKList_t));
+    maxGraphWeight = malloc(sizeof(topKGraph_t));
     maxGraphWeight->graphWeight = 0;
     maxGraphWeight->graphIndex = -1;
 
     /* Initiate tmpMaxWeight */
-    tmpMaxGraphWeight = malloc(sizeof(topKList_t));
+    tmpMaxGraphWeight = malloc(sizeof(topKGraph_t));
     tmpMaxGraphWeight->graphWeight = 0;
     tmpMaxGraphWeight->graphIndex = -1;
 
@@ -86,14 +87,15 @@ int main(int argc, char const *argv[])
     /* Tracker saving the spot of the (k - n) highest weight */
     tracker = k - 2;
 
-    /* Keep asking for input until user quits the program */
-    while(fgets(cmd, sizeof(cmd), stdin) != NULL)
+    /* Keep reading the input until the program stops receiving it */
+    while (fgets(cmd, sizeof(cmd), stdin) != NULL)
     {
         /* AggiungiGrafo */
         if (cmd[0] == ADDGRAPH)
         {
             cmdAddGraph();
         }
+
         /* TopK */
         else if (cmd[0] == TOPK)
         {
@@ -105,12 +107,14 @@ int main(int argc, char const *argv[])
 }
 
 /* Support for finding the index of the shortest path to the current node */
-int findShortestPath(uint shortestPath[], bool isShortest[])
+int findShortestPath(const uint* shortestPath, const bool* isShortest)
 {
     /* The shortest path */
     uint shortest;
+
     /* The index of the shortest path */
     int shortestId = 0;
+
     int i;
 
     /* Set the shortest initial path to be the maximum number */
@@ -143,7 +147,7 @@ uint calculateWeight(uint graph[d][d])
 
     int i;
 
-    /* Initiate all nodes as longest paths possible */
+    /* Initialize all nodes as longest paths possible */
     for (i = 0; i < d; i++)
     {
         shortestPath[i] = UINT_MAX;
@@ -158,12 +162,13 @@ uint calculateWeight(uint graph[d][d])
         /* Find the shortest path for the current node */
         int curr = findShortestPath(shortestPath, isShortest);
 
+        /* Once found, set it as the shortest */
         isShortest[curr] = true;
 
         for (int j = 0; j < d; j++)
         {
             /* Update the shortest paths following requirements */
-            if (graph[curr][j] && !isShortest[j] && shortestPath[curr] != UINT_MAX && shortestPath[curr] + graph[curr][j] < shortestPath[j])
+            if (graph[curr][j] && !isShortest[j] && (shortestPath[curr] != UINT_MAX) && ((shortestPath[curr] + graph[curr][j]) < shortestPath[j]))
             {
                 shortestPath[j] = shortestPath[curr] + graph[curr][j];
             }
@@ -194,7 +199,7 @@ uint getArchWeight()
     /* Read the first character from stdin */
     c = getchar_unlocked();
 
-    /* When , is read, move on to the next number */
+    /* When one of the following is read, move on to the next number */
     if (c == ',' || c == '\n' || c == ' ')
     {
         c = getchar_unlocked();
@@ -258,7 +263,7 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
 
         if (topKCounter == k)
         {
-            mergeSort(topKList, 0, k - 1);
+            mergeSort(0, k - 1);
             maxGraphWeight = &topKList[k - 1];
         }
     }
@@ -302,7 +307,7 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
             tmpMaxGraphWeight->graphIndex = newGraphIndex;
 
             /* Sort the topKList and reset pointers and tracker */
-            mergeSort(topKList, 0, k - 1);
+            mergeSort(0, k - 1);
 
             maxGraphWeight = &topKList[k - 1];
             tmpMaxGraphWeight = resetTmpMaxWeight;
@@ -312,69 +317,69 @@ void checkIfTopK(uint newGraphWeight, int newGraphIndex)
 }
 
 /* Support function to merge more arrays into one */
-void mergeSupport(topKList_t *list, int start, int middle, int end)
+void mergeArrays(int start, int middle, int end)
 {
     /* Calculate the sizes of the new arrays */
-    int n1 = middle - start + 1;
-    int n2 = end - middle;
+    int dim1 = middle - start + 1;
+    int dim2 = end - middle;
 
     /* Initiate the support arrays */
-    topKList_t *tmp1, *tmp2;
-    tmp1 = malloc(n1 * sizeof(topKList_t));
-    tmp2 = malloc(n2 * sizeof(topKList_t));
+    topKGraph_t *tmp1, *tmp2;
+    tmp1 = malloc(dim1 * sizeof(topKGraph_t));
+    tmp2 = malloc(dim2 * sizeof(topKGraph_t));
 
     /* Copy the contents of the list */
-    for (int i = 0; i < n1; i++)
+    for (int i = 0; i < dim1; i++)
     {
-        tmp1[i].graphWeight = list[start + i].graphWeight;
-        tmp1[i].graphIndex = list[start + i].graphIndex;
+        tmp1[i].graphWeight = topKList[start + i].graphWeight;
+        tmp1[i].graphIndex = topKList[start + i].graphIndex;
     }
 
-    for (int j = 0; j < n2; j++)
+    for (int j = 0; j < dim2; j++)
     {
-        tmp2[j].graphWeight = list[middle + 1 + j].graphWeight;
-        tmp2[j].graphIndex = list[middle + 1 + j].graphIndex;
+        tmp2[j].graphWeight = topKList[middle + 1 + j].graphWeight;
+        tmp2[j].graphIndex = topKList[middle + 1 + j].graphIndex;
     }
 
-    /* Save indexes of support arrays */
+    /* Reset indexes of support arrays */
     int i = 0;
     int j = 0;
     int l = start;
 
     /* Put elements of the support arrays into the main array, in order */
-    while (i < n1 && j < n2)
+    while (i < dim1 && j < dim2)
     {
         if (tmp1[i].graphWeight <= tmp2[j].graphWeight)
         {
-            list[l] = tmp1[i];
+            topKList[l] = tmp1[i];
             i++;
         }
         else
         {
-            list[l] = tmp2[j];
+            topKList[l] = tmp2[j];
             j++;
         }
         l++;
     }
 
     /* Copy the remaining elements of the support arrays into the main array */
-    while (i < n1)
+    while (i < dim1)
     {
-        list[l] = tmp1[i];
+        topKList[l] = tmp1[i];
         i++;
         l++;
     }
 
-    while (j < n2)
+    while (j < dim2)
     {
-        list[l] = tmp2[j];
+        topKList[l] = tmp2[j];
         j++;
         l++;
     }
 }
 
 /* Algorithm to order the list in ascending order */
-void mergeSort(topKList_t *list, int start, int end)
+void mergeSort(int start, int end)
 {
     if (start < end)
     {
@@ -382,11 +387,11 @@ void mergeSort(topKList_t *list, int start, int end)
         int middle = start + (end - start) / 2;
 
         /* Split the list in 2 and sort */
-        mergeSort(list, start, middle);
-        mergeSort(list, middle + 1, end);
+        mergeSort(start, middle);
+        mergeSort(middle + 1, end);
 
         /* Merge the arrays */
-        mergeSupport(list, start, middle, end);
+        mergeArrays(start, middle, end);
     }
 }
 
