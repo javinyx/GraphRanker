@@ -90,13 +90,13 @@ int main(int argc, char const *argv[])
     /* Keep reading the input until the program stops receiving it */
     while (fgets(cmd, sizeof(cmd), stdin) != NULL)
     {
-        /* AggiungiGrafo */
+        /* "AddGraph" command */
         if (cmd[0] == ADDGRAPH)
         {
             cmdAddGraph();
         }
 
-        /* TopK */
+        /* "TopK" command */
         else if (cmd[0] == TOPK)
         {
             cmdTopK();
@@ -115,12 +115,10 @@ int findShortestPath(const uint* shortestPath, const bool* isShortest)
     /* The index of the shortest path */
     int shortestId = 0;
 
-    int i;
-
     /* Set the shortest initial path to be the maximum number */
     shortest = UINT_MAX;
 
-    for (i = 0; i < d; i++)
+    for (int i = 0; i < d; i++)
     {
         /* If the path is shorter than the minimum, and it's part of the shortest path array, then replace it */
         if (shortestPath[i] <= shortest && isShortest[i] == false)
@@ -145,10 +143,8 @@ uint calculateWeight(uint graph[d][d])
     /* isShortest array containing booleans which indicate if the path is the shortest to that node */
     bool isShortest[d];
 
-    int i;
-
     /* Initialize all nodes as longest paths possible */
-    for (i = 0; i < d; i++)
+    for (int i = 0; i < d; i++)
     {
         shortestPath[i] = UINT_MAX;
         isShortest[i] = false;
@@ -224,12 +220,10 @@ void cmdAddGraph()
     /* Create a matrix of unsigned integers for each graph since the max value is 2^32 - 1 */
     uint graph[d][d];
 
-    int i, j;
-
     /* Read each value of the graph from the command line ignoring commas */
-    for (i = 0; i < d; i++)
+    for (int i = 0; i < d; i++)
     {
-        for (j = 0; j < d; j++)
+        for (int j = 0; j < d; j++)
         {
             graph[i][j] = getArchWeight();
         }
@@ -398,9 +392,7 @@ void mergeSort(int start, int end)
 /* Print the indexes of the graphs have the shortest paths from the topK list */
 void cmdTopK()
 {
-    int i;
-
-    for (i = 0; i < topKCounter; i++)
+    for (int i = 0; i < topKCounter; i++)
     {
         /* If it's the last character, remove the space */
         if (i == topKCounter - 1)
