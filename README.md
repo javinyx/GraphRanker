@@ -1,2 +1,2 @@
-# api-project-2021
-Algoritmi e Principi dell'informatica project 2020/2021
+# Graph Ranker
+Algorithms and principles of computer science project - Polimi A.Y. 2020/2021
