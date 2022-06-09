@@ -55,9 +55,9 @@ AggiungiGrafo                                   # Add yet another 3x3 graph
 TopK                                            1,0 # or 0,1
 ```
 
-## Choices
+## Decisions
 
-Due to the nature of the project, being both space and time efficient, I made the following choices:
+Due to the nature of the project, being both space and time efficient, I made the following decisions:
 
 - Store only the best graph weights and indexes instead of the whole matrix, as heavier graphs will never be in the top k list except the first few.
 
