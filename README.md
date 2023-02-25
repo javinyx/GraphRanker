@@ -1,6 +1,6 @@
 # Graph Ranker
 
-Final project for the Algorithms and Principles of Informatics course, Computer Science Engineering branch at Politecnico di Milano, A.Y. 2020/21.
+University project for the Algorithms and Principles of Informatics course, Computer Science Engineering branch at Politecnico di Milano, A.Y. 2020/21.
 
 ## Objectives
 
